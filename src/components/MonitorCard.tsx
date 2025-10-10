@@ -1,19 +1,23 @@
-import { Activity, Globe, Trash2, Power, PowerOff } from "lucide-react";
+import { Activity, Globe, Trash2, Power, PowerOff, Edit } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor } from "@/types/monitor";
 import { MonitorStats } from "@/types/monitor";
 import { cn } from "@/lib/utils";
+import { AddMonitorDialog } from "./AddMonitorDialog";
 
 interface MonitorCardProps {
   monitor: Monitor;
   stats: MonitorStats;
   onToggle: (id: string, enabled: boolean) => void;
   onRemove: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Monitor>) => void;
+  onSelect: (id: string) => void;
+  isSelected: boolean;
 }
 
-export function MonitorCard({ monitor, stats, onToggle, onRemove }: MonitorCardProps) {
+export function MonitorCard({ monitor, stats, onToggle, onRemove, onUpdate, onSelect, isSelected }: MonitorCardProps) {
   const statusColor = {
     success: "text-green-600 dark:text-green-400",
     warning: "text-orange-600 dark:text-orange-400",
@@ -29,7 +33,13 @@ export function MonitorCard({ monitor, stats, onToggle, onRemove }: MonitorCardP
   const status = stats.lastCheck?.status || 'error';
 
   return (
-    <Card className="relative overflow-hidden transition-all hover:shadow-md">
+    <Card 
+      className={cn(
+        "relative overflow-hidden transition-all hover:shadow-md cursor-pointer",
+        isSelected && "ring-2 ring-primary"
+      )}
+      onClick={() => onSelect(monitor.id)}
+    >
       <div
         className={cn(
           "absolute top-0 left-0 w-1 h-full transition-all",
@@ -51,7 +61,7 @@ export function MonitorCard({ monitor, stats, onToggle, onRemove }: MonitorCardP
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="ghost"
               size="icon"
@@ -64,6 +74,15 @@ export function MonitorCard({ monitor, stats, onToggle, onRemove }: MonitorCardP
                 <PowerOff className="h-4 w-4 text-muted-foreground" />
               )}
             </Button>
+            <AddMonitorDialog
+              monitor={monitor}
+              onUpdate={onUpdate}
+              trigger={
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              }
+            />
             <Button
               variant="ghost"
               size="icon"
@@ -109,6 +128,14 @@ export function MonitorCard({ monitor, stats, onToggle, onRemove }: MonitorCardP
               <Badge variant={stats.lastCheck.sslValid ? 'default' : 'destructive'} className="text-xs">
                 {stats.lastCheck.sslValid ? '有效' : '无效'}
               </Badge>
+            </div>
+          </div>
+        )}
+        {monitor.alertEmail && (
+          <div className="mt-2 pt-2 border-t">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">告警邮箱</span>
+              <span className="text-xs font-mono">{monitor.alertEmail}</span>
             </div>
           </div>
         )}

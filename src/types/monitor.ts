@@ -4,6 +4,7 @@ export interface Monitor {
   url: string;
   interval: number; // in seconds
   enabled: boolean;
+  alertEmail?: string; // email for alerts
   createdAt: number;
 }
 

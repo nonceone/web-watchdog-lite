@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,16 +20,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { Monitor } from "@/types/monitor";
 
 interface AddMonitorDialogProps {
-  onAdd: (monitor: { name: string; url: string; interval: number; enabled: boolean }) => void;
+  monitor?: Monitor;
+  onAdd?: (monitor: { name: string; url: string; interval: number; enabled: boolean; alertEmail?: string }) => void;
+  onUpdate?: (id: string, monitor: { name: string; url: string; interval: number; enabled: boolean; alertEmail?: string }) => void;
+  trigger?: React.ReactNode;
 }
 
-export function AddMonitorDialog({ onAdd }: AddMonitorDialogProps) {
+export function AddMonitorDialog({ monitor, onAdd, onUpdate, trigger }: AddMonitorDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [interval, setInterval] = useState("60");
+  const [alertEmail, setAlertEmail] = useState("");
+
+  const isEditMode = !!monitor;
+
+  useEffect(() => {
+    if (monitor) {
+      setName(monitor.name);
+      setUrl(monitor.url);
+      setInterval(monitor.interval.toString());
+      setAlertEmail(monitor.alertEmail || "");
+    }
+  }, [monitor]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,38 +70,63 @@ export function AddMonitorDialog({ onAdd }: AddMonitorDialogProps) {
       return;
     }
 
-    onAdd({
+    const intervalNum = parseInt(interval);
+    if (intervalNum < 5) {
+      toast({
+        title: "错误",
+        description: "检测间隔不能小于 5 秒",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const monitorData = {
       name: name.trim(),
       url: url.trim(),
-      interval: parseInt(interval),
-      enabled: true,
-    });
+      interval: intervalNum,
+      enabled: monitor?.enabled ?? true,
+      alertEmail: alertEmail.trim() || undefined,
+    };
 
-    toast({
-      title: "成功",
-      description: `已添加监控任务：${name}`,
-    });
+    if (isEditMode && onUpdate && monitor) {
+      onUpdate(monitor.id, monitorData);
+      toast({
+        title: "成功",
+        description: `已更新监控任务：${name}`,
+      });
+    } else if (onAdd) {
+      onAdd(monitorData);
+      toast({
+        title: "成功",
+        description: `已添加监控任务：${name}`,
+      });
+    }
 
-    setName("");
-    setUrl("");
-    setInterval("60");
+    if (!isEditMode) {
+      setName("");
+      setUrl("");
+      setInterval("60");
+      setAlertEmail("");
+    }
     setOpen(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          添加监控
-        </Button>
+        {trigger || (
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            添加监控
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>添加监控任务</DialogTitle>
+            <DialogTitle>{isEditMode ? "编辑监控任务" : "添加监控任务"}</DialogTitle>
             <DialogDescription>
-              输入要监控的网站信息，系统将定期检测其可用性。
+              {isEditMode ? "修改监控任务配置" : "输入要监控的网站信息，系统将定期检测其可用性。"}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -115,6 +156,8 @@ export function AddMonitorDialog({ onAdd }: AddMonitorDialogProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="5">每 5 秒</SelectItem>
+                  <SelectItem value="10">每 10 秒</SelectItem>
                   <SelectItem value="30">每 30 秒</SelectItem>
                   <SelectItem value="60">每 1 分钟</SelectItem>
                   <SelectItem value="300">每 5 分钟</SelectItem>
@@ -122,10 +165,22 @@ export function AddMonitorDialog({ onAdd }: AddMonitorDialogProps) {
                   <SelectItem value="3600">每 1 小时</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">最小间隔：5秒</p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="alertEmail">告警邮箱（可选）</Label>
+              <Input
+                id="alertEmail"
+                type="email"
+                placeholder="alert@example.com"
+                value={alertEmail}
+                onChange={(e) => setAlertEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">网站不可用时发送通知（需要后端支持）</p>
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">添加</Button>
+            <Button type="submit">{isEditMode ? "保存" : "添加"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

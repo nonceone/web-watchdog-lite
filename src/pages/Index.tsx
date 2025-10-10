@@ -1,3 +1,4 @@
+import React from "react";
 import { Activity } from "lucide-react";
 import { AddMonitorDialog } from "@/components/AddMonitorDialog";
 import { MonitorCard } from "@/components/MonitorCard";
@@ -9,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const { monitors, addMonitor, removeMonitor, updateMonitor, getMonitorStats } = useMonitors();
+  const [selectedMonitorId, setSelectedMonitorId] = React.useState<string | null>(null);
 
   const handleToggle = (id: string, enabled: boolean) => {
     updateMonitor(id, { enabled });
@@ -22,6 +24,9 @@ const Index = () => {
     const monitor = monitors.find((m) => m.id === id);
     if (confirm(`确定要删除监控任务"${monitor?.name}"吗？`)) {
       removeMonitor(id);
+      if (selectedMonitorId === id) {
+        setSelectedMonitorId(null);
+      }
       toast({
         title: "已删除",
         description: `监控任务"${monitor?.name}"已被删除`,
@@ -29,7 +34,13 @@ const Index = () => {
     }
   };
 
+  const handleSelect = (id: string) => {
+    setSelectedMonitorId(id === selectedMonitorId ? null : id);
+  };
+
   const stats = monitors.map((monitor) => getMonitorStats(monitor.id));
+  const selectedMonitor = selectedMonitorId ? monitors.find(m => m.id === selectedMonitorId) : null;
+  const selectedStats = selectedMonitorId ? getMonitorStats(selectedMonitorId) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,6 +79,9 @@ const Index = () => {
                   stats={getMonitorStats(monitor.id)}
                   onToggle={handleToggle}
                   onRemove={handleRemove}
+                  onUpdate={updateMonitor}
+                  onSelect={handleSelect}
+                  isSelected={selectedMonitorId === monitor.id}
                 />
               ))}
             </div>
@@ -81,9 +95,9 @@ const Index = () => {
         </div>
 
         {/* Chart */}
-        {monitors.length > 0 && (
+        {selectedMonitor && selectedStats && (
           <div className="mb-8">
-            <LatencyChart stats={stats} />
+            <LatencyChart stats={selectedStats} monitor={selectedMonitor} />
           </div>
         )}
 

@@ -1,4 +1,5 @@
 import { Monitor, MonitorCheck } from "@/types/monitor";
+import { toast } from "@/hooks/use-toast";
 
 export async function checkWebsite(monitor: Monitor): Promise<MonitorCheck> {
   const startTime = performance.now();
@@ -39,14 +40,25 @@ export async function checkWebsite(monitor: Monitor): Promise<MonitorCheck> {
     const endTime = performance.now();
     const latency = Math.round(endTime - startTime);
 
-    return {
+    const result = {
       id: checkId,
       monitorId: monitor.id,
       timestamp: Date.now(),
-      status: 'error',
+      status: 'error' as const,
       latency,
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
     };
+
+    // Show alert notification if email is configured
+    if (monitor.alertEmail) {
+      toast({
+        title: "⚠️ 网站不可用",
+        description: `${monitor.name} 检测失败。告警已记录（邮箱：${monitor.alertEmail}）`,
+        variant: "destructive",
+      });
+    }
+
+    return result;
   }
 }
 

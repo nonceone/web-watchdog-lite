@@ -1,54 +1,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MonitorStats } from "@/types/monitor";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { Monitor } from "@/types/monitor";
 
 interface LatencyChartProps {
-  stats: MonitorStats[];
+  stats: MonitorStats;
+  monitor: Monitor;
 }
 
-export function LatencyChart({ stats }: LatencyChartProps) {
-  // Get the most recent 20 checks from each monitor
-  const chartData = stats.flatMap((stat) =>
-    stat.checks.slice(0, 20).reverse().map((check) => ({
+export function LatencyChart({ stats, monitor }: LatencyChartProps) {
+  // Get the most recent 50 checks
+  const chartData = stats.checks
+    .slice(0, 50)
+    .reverse()
+    .map((check) => ({
       timestamp: check.timestamp,
-      [stat.monitorId]: check.latency < 10000 ? check.latency : null,
-      name: stats.find((s) => s.monitorId === stat.monitorId)?.monitorId || '',
-    }))
-  );
-
-  // Merge data points by timestamp
-  const mergedData = chartData.reduce((acc, curr) => {
-    const existing = acc.find((item) => item.timestamp === curr.timestamp);
-    if (existing) {
-      Object.assign(existing, curr);
-    } else {
-      acc.push(curr);
-    }
-    return acc;
-  }, [] as any[]);
-
-  // Sort by timestamp
-  mergedData.sort((a, b) => a.timestamp - b.timestamp);
-
-  const colors = [
-    "hsl(var(--chart-1))",
-    "hsl(var(--chart-2))",
-    "hsl(var(--chart-3))",
-    "hsl(var(--chart-4))",
-    "hsl(var(--chart-5))",
-  ];
+      latency: check.latency < 10000 ? check.latency : null,
+      status: check.status,
+    }));
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>延迟趋势</CardTitle>
+        <CardTitle>{monitor.name} - 延迟趋势</CardTitle>
       </CardHeader>
       <CardContent>
-        {mergedData.length > 0 ? (
+        {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={mergedData}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis
                 dataKey="timestamp"
@@ -70,18 +51,14 @@ export function LatencyChart({ stats }: LatencyChartProps) {
                   borderRadius: '8px',
                 }}
               />
-              <Legend />
-              {stats.map((stat, index) => (
-                <Line
-                  key={stat.monitorId}
-                  type="monotone"
-                  dataKey={stat.monitorId}
-                  stroke={colors[index % colors.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                />
-              ))}
+              <Line
+                type="monotone"
+                dataKey="latency"
+                stroke="hsl(var(--chart-1))"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                connectNulls
+              />
             </LineChart>
           </ResponsiveContainer>
         ) : (
