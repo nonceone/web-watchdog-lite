@@ -95,7 +95,7 @@ export function MonitorCard({ monitor, stats, onToggle, onRemove, onUpdate, onSe
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div>
             <div className="text-xs text-muted-foreground mb-1">状态</div>
             <Badge
@@ -119,6 +119,12 @@ export function MonitorCard({ monitor, stats, onToggle, onRemove, onUpdate, onSe
           <div>
             <div className="text-xs text-muted-foreground mb-1">可用性</div>
             <div className="text-sm font-medium">{stats.uptime}%</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">最后检测</div>
+            <div className="text-sm font-medium">
+              {stats.lastCheck ? new Date(stats.lastCheck.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'}
+            </div>
           </div>
         </div>
         {stats.lastCheck?.sslValid !== undefined && (

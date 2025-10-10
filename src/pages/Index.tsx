@@ -3,7 +3,6 @@ import { Activity } from "lucide-react";
 import { AddMonitorDialog } from "@/components/AddMonitorDialog";
 import { MonitorCard } from "@/components/MonitorCard";
 import { LatencyChart } from "@/components/LatencyChart";
-import { StatusTable } from "@/components/StatusTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useMonitors } from "@/hooks/useMonitors";
 import { toast } from "@/hooks/use-toast";
@@ -98,13 +97,6 @@ const Index = () => {
         {selectedMonitor && selectedStats && (
           <div className="mb-8">
             <LatencyChart stats={selectedStats} monitor={selectedMonitor} />
-          </div>
-        )}
-
-        {/* Status Table */}
-        {monitors.length > 0 && (
-          <div>
-            <StatusTable monitors={monitors} stats={stats} />
           </div>
         )}
       </main>
